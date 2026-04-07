@@ -175,6 +175,129 @@ class AudioManager {
   }
 
   playSink(shipSize: number) {
+    // Celebratory version: explosion then crowd cheering and roaring
+    if (!this._enabled || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    const duration = 2.0 + shipSize * 0.3;
+
+    // === INITIAL EXPLOSION (0 - 0.5s) ===
+    const boom = this.ctx.createOscillator();
+    boom.type = "sawtooth";
+    boom.frequency.setValueAtTime(150, t);
+    boom.frequency.exponentialRampToValueAtTime(30, t + 0.5);
+    const boomGain = this.ctx.createGain();
+    boomGain.gain.setValueAtTime(0.4, t);
+    boomGain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    boom.connect(boomGain).connect(this.masterGain!);
+    boom.start(t);
+    boom.stop(t + 0.5);
+
+    const boomNoise = this.createNoise(0.4);
+    const boomFilter = this.ctx.createBiquadFilter();
+    boomFilter.type = "lowpass";
+    boomFilter.frequency.setValueAtTime(2000, t);
+    boomFilter.frequency.exponentialRampToValueAtTime(500, t + 0.4);
+    const boomNoiseGain = this.ctx.createGain();
+    boomNoiseGain.gain.setValueAtTime(0.3, t);
+    boomNoiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    boomNoise.connect(boomFilter).connect(boomNoiseGain).connect(this.masterGain!);
+    boomNoise.start(t);
+    boomNoise.stop(t + 0.4);
+
+    // === CROWD CHEERING (0.3s - end) ===
+    // Layered filtered noise to simulate crowd roar
+    // Layer 1: mid-range crowd murmur/cheer
+    const crowd1 = this.createNoise(duration);
+    const crowdFilter1 = this.ctx.createBiquadFilter();
+    crowdFilter1.type = "bandpass";
+    crowdFilter1.frequency.setValueAtTime(800, t + 0.3);
+    crowdFilter1.frequency.linearRampToValueAtTime(1200, t + 0.8);
+    crowdFilter1.frequency.linearRampToValueAtTime(900, t + duration * 0.7);
+    crowdFilter1.frequency.linearRampToValueAtTime(600, t + duration);
+    crowdFilter1.Q.value = 2;
+    const crowdGain1 = this.ctx.createGain();
+    crowdGain1.gain.setValueAtTime(0, t + 0.2);
+    crowdGain1.gain.linearRampToValueAtTime(0.25, t + 0.6);
+    crowdGain1.gain.setValueAtTime(0.25, t + duration * 0.5);
+    crowdGain1.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    crowd1.connect(crowdFilter1).connect(crowdGain1).connect(this.masterGain!);
+    crowd1.start(t + 0.3);
+    crowd1.stop(t + duration);
+
+    // Layer 2: higher pitch crowd excitement
+    const crowd2 = this.createNoise(duration);
+    const crowdFilter2 = this.ctx.createBiquadFilter();
+    crowdFilter2.type = "bandpass";
+    crowdFilter2.frequency.setValueAtTime(1500, t + 0.35);
+    crowdFilter2.frequency.linearRampToValueAtTime(2200, t + 0.7);
+    crowdFilter2.frequency.linearRampToValueAtTime(1800, t + duration * 0.6);
+    crowdFilter2.frequency.linearRampToValueAtTime(1000, t + duration);
+    crowdFilter2.Q.value = 1.5;
+    const crowdGain2 = this.ctx.createGain();
+    crowdGain2.gain.setValueAtTime(0, t + 0.3);
+    crowdGain2.gain.linearRampToValueAtTime(0.18, t + 0.7);
+    crowdGain2.gain.setValueAtTime(0.18, t + duration * 0.4);
+    crowdGain2.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    crowd2.connect(crowdFilter2).connect(crowdGain2).connect(this.masterGain!);
+    crowd2.start(t + 0.35);
+    crowd2.stop(t + duration);
+
+    // Layer 3: low roar/rumble of crowd
+    const crowd3 = this.createNoise(duration);
+    const crowdFilter3 = this.ctx.createBiquadFilter();
+    crowdFilter3.type = "bandpass";
+    crowdFilter3.frequency.setValueAtTime(300, t + 0.3);
+    crowdFilter3.frequency.linearRampToValueAtTime(500, t + 0.8);
+    crowdFilter3.frequency.linearRampToValueAtTime(350, t + duration);
+    crowdFilter3.Q.value = 3;
+    const crowdGain3 = this.ctx.createGain();
+    crowdGain3.gain.setValueAtTime(0, t + 0.25);
+    crowdGain3.gain.linearRampToValueAtTime(0.2, t + 0.6);
+    crowdGain3.gain.setValueAtTime(0.2, t + duration * 0.5);
+    crowdGain3.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    crowd3.connect(crowdFilter3).connect(crowdGain3).connect(this.masterGain!);
+    crowd3.start(t + 0.3);
+    crowd3.stop(t + duration);
+
+    // === CROWD WAVE PULSES (simulate cheering surges) ===
+    const pulseCount = shipSize + 2;
+    for (let i = 0; i < pulseCount; i++) {
+      const pDelay = 0.5 + i * 0.35;
+      if (pDelay + 0.5 > duration) break;
+      const pulse = this.createNoise(0.5);
+      const pulseFilter = this.ctx.createBiquadFilter();
+      pulseFilter.type = "bandpass";
+      pulseFilter.frequency.value = 1000 + Math.random() * 800;
+      pulseFilter.Q.value = 2;
+      const pulseGain = this.ctx.createGain();
+      pulseGain.gain.setValueAtTime(0, t + pDelay);
+      pulseGain.gain.linearRampToValueAtTime(0.15, t + pDelay + 0.08);
+      pulseGain.gain.exponentialRampToValueAtTime(0.001, t + pDelay + 0.45);
+      pulse.connect(pulseFilter).connect(pulseGain).connect(this.masterGain!);
+      pulse.start(t + pDelay);
+      pulse.stop(t + pDelay + 0.5);
+    }
+
+    // === TRIUMPHANT HORN TONES ===
+    const hornNotes = [523.25, 659.25, 783.99];
+    for (let i = 0; i < hornNotes.length; i++) {
+      const hDelay = 0.4 + i * 0.2;
+      const horn = this.ctx.createOscillator();
+      horn.type = "triangle";
+      horn.frequency.value = hornNotes[i];
+      const hornGain = this.ctx.createGain();
+      hornGain.gain.setValueAtTime(0, t + hDelay);
+      hornGain.gain.linearRampToValueAtTime(0.12, t + hDelay + 0.05);
+      hornGain.gain.setValueAtTime(0.1, t + hDelay + 0.3);
+      hornGain.gain.exponentialRampToValueAtTime(0.001, t + hDelay + 0.6);
+      horn.connect(hornGain).connect(this.masterGain!);
+      horn.start(t + hDelay);
+      horn.stop(t + hDelay + 0.6);
+    }
+  }
+
+  playSinkEnemy(shipSize: number) {
+    // Somber version: when AI sinks player's ship (explosion + creak)
     if (!this._enabled || !this.ctx) return;
     const t = this.ctx.currentTime;
     const duration = 1.5 + shipSize * 0.4;
@@ -216,22 +339,6 @@ class AudioManager {
     noise.connect(filter).connect(noiseGain).connect(this.masterGain!);
     noise.start(t);
     noise.stop(t + duration);
-
-    // Secondary explosions scaled with ship size
-    for (let i = 0; i < shipSize; i++) {
-      const delay = 0.3 + i * 0.25;
-      const bang = this.createNoise(0.4);
-      const bangFilter = this.ctx.createBiquadFilter();
-      bangFilter.type = "lowpass";
-      bangFilter.frequency.value = 2000;
-      const bangGain = this.ctx.createGain();
-      bangGain.gain.setValueAtTime(0, t + delay);
-      bangGain.gain.linearRampToValueAtTime(0.2, t + delay + 0.02);
-      bangGain.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.4);
-      bang.connect(bangFilter).connect(bangGain).connect(this.masterGain!);
-      bang.start(t + delay);
-      bang.stop(t + delay + 0.4);
-    }
   }
 
   playVictory() {

@@ -423,7 +423,7 @@ function App() {
         setTimeout(() => { setGameAnimation({ type: "defeat" }); }, 300);
         return;
       }
-      if (didSink) { audioManager.playSink(hitShipSize); setMessage("Your " + hitShipLabel + " is sunk!"); }
+      if (didSink) { audioManager.playSinkEnemy(hitShipSize); setMessage("Your " + hitShipLabel + " is sunk!"); }
       else { audioManager.playHit(); setMessage("Your " + hitShipLabel + " is hit!"); }
       setGameAnimation({ type: didSink ? "sink" : "hit", shipName: hitShipName, shipLabel: hitShipLabel, shipSize: hitShipSize, isPlayer: true });
       pendingActionRef.current = "player-turn";

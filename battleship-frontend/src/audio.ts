@@ -101,58 +101,75 @@ class AudioManager {
     punch.start(t + 0.05);
     punch.stop(t + 0.35);
 
-    // === ROAR PHASE (0.3s - 1.2s) ===
-    // Low growling roar base
-    const roarBase = this.ctx.createOscillator();
-    roarBase.type = "sawtooth";
-    roarBase.frequency.setValueAtTime(80, t + 0.3);
-    roarBase.frequency.linearRampToValueAtTime(120, t + 0.6);
-    roarBase.frequency.linearRampToValueAtTime(70, t + 1.1);
-    const roarBaseGain = this.ctx.createGain();
-    roarBaseGain.gain.setValueAtTime(0, t + 0.25);
-    roarBaseGain.gain.linearRampToValueAtTime(0.25, t + 0.45);
-    roarBaseGain.gain.setValueAtTime(0.25, t + 0.7);
-    roarBaseGain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
-    const roarDistortion = this.ctx.createWaveShaper();
-    const curve = new Float32Array(256);
-    for (let i = 0; i < 256; i++) {
-      const x = (i * 2) / 256 - 1;
-      curve[i] = (Math.PI + 3) * x / (Math.PI + 3 * Math.abs(x));
+    // === CHEER PHASE (0.3s - 1.5s) ===
+    // Crowd cheer layer - mid-range
+    const cheer1 = this.createNoise(1.2);
+    const cheerFilter1 = this.ctx.createBiquadFilter();
+    cheerFilter1.type = "bandpass";
+    cheerFilter1.frequency.setValueAtTime(900, t + 0.3);
+    cheerFilter1.frequency.linearRampToValueAtTime(1300, t + 0.6);
+    cheerFilter1.frequency.linearRampToValueAtTime(800, t + 1.3);
+    cheerFilter1.Q.value = 2;
+    const cheerGain1 = this.ctx.createGain();
+    cheerGain1.gain.setValueAtTime(0, t + 0.25);
+    cheerGain1.gain.linearRampToValueAtTime(0.18, t + 0.5);
+    cheerGain1.gain.setValueAtTime(0.18, t + 0.8);
+    cheerGain1.gain.exponentialRampToValueAtTime(0.001, t + 1.4);
+    cheer1.connect(cheerFilter1).connect(cheerGain1).connect(this.masterGain!);
+    cheer1.start(t + 0.3);
+    cheer1.stop(t + 1.4);
+
+    // Crowd cheer layer - higher excitement
+    const cheer2 = this.createNoise(1.0);
+    const cheerFilter2 = this.ctx.createBiquadFilter();
+    cheerFilter2.type = "bandpass";
+    cheerFilter2.frequency.setValueAtTime(1600, t + 0.35);
+    cheerFilter2.frequency.linearRampToValueAtTime(2000, t + 0.6);
+    cheerFilter2.frequency.linearRampToValueAtTime(1200, t + 1.2);
+    cheerFilter2.Q.value = 1.5;
+    const cheerGain2 = this.ctx.createGain();
+    cheerGain2.gain.setValueAtTime(0, t + 0.3);
+    cheerGain2.gain.linearRampToValueAtTime(0.12, t + 0.55);
+    cheerGain2.gain.exponentialRampToValueAtTime(0.001, t + 1.3);
+    cheer2.connect(cheerFilter2).connect(cheerGain2).connect(this.masterGain!);
+    cheer2.start(t + 0.35);
+    cheer2.stop(t + 1.3);
+
+    // Low crowd rumble
+    const cheerLow = this.createNoise(1.2);
+    const cheerFilterLow = this.ctx.createBiquadFilter();
+    cheerFilterLow.type = "bandpass";
+    cheerFilterLow.frequency.setValueAtTime(350, t + 0.3);
+    cheerFilterLow.frequency.linearRampToValueAtTime(500, t + 0.7);
+    cheerFilterLow.frequency.linearRampToValueAtTime(300, t + 1.3);
+    cheerFilterLow.Q.value = 3;
+    const cheerGainLow = this.ctx.createGain();
+    cheerGainLow.gain.setValueAtTime(0, t + 0.25);
+    cheerGainLow.gain.linearRampToValueAtTime(0.15, t + 0.5);
+    cheerGainLow.gain.exponentialRampToValueAtTime(0.001, t + 1.4);
+    cheerLow.connect(cheerFilterLow).connect(cheerGainLow).connect(this.masterGain!);
+    cheerLow.start(t + 0.3);
+    cheerLow.stop(t + 1.4);
+
+    // === UPLIFTING TONES (0.35s - 1.2s) ===
+    const upliftNotes = [
+      { freq: 523.25, start: 0.35, dur: 0.4 },  // C5
+      { freq: 659.25, start: 0.5, dur: 0.4 },   // E5
+      { freq: 783.99, start: 0.65, dur: 0.5 },   // G5
+    ];
+    for (const note of upliftNotes) {
+      const osc = this.ctx.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.value = note.freq;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0, t + note.start);
+      g.gain.linearRampToValueAtTime(0.1, t + note.start + 0.05);
+      g.gain.setValueAtTime(0.08, t + note.start + note.dur * 0.6);
+      g.gain.exponentialRampToValueAtTime(0.001, t + note.start + note.dur);
+      osc.connect(g).connect(this.masterGain!);
+      osc.start(t + note.start);
+      osc.stop(t + note.start + note.dur);
     }
-    roarDistortion.curve = curve;
-    roarBase.connect(roarDistortion).connect(roarBaseGain).connect(this.masterGain!);
-    roarBase.start(t + 0.3);
-    roarBase.stop(t + 1.2);
-
-    // Roar mid-frequency growl
-    const roarMid = this.ctx.createOscillator();
-    roarMid.type = "square";
-    roarMid.frequency.setValueAtTime(160, t + 0.35);
-    roarMid.frequency.linearRampToValueAtTime(200, t + 0.55);
-    roarMid.frequency.linearRampToValueAtTime(140, t + 1.0);
-    const roarMidGain = this.ctx.createGain();
-    roarMidGain.gain.setValueAtTime(0, t + 0.3);
-    roarMidGain.gain.linearRampToValueAtTime(0.1, t + 0.5);
-    roarMidGain.gain.exponentialRampToValueAtTime(0.001, t + 1.1);
-    roarMid.connect(roarMidGain).connect(this.masterGain!);
-    roarMid.start(t + 0.35);
-    roarMid.stop(t + 1.1);
-
-    // Roar texture noise (breath/wind effect)
-    const roarNoise = this.createNoise(0.9);
-    const roarNoiseFilter = this.ctx.createBiquadFilter();
-    roarNoiseFilter.type = "bandpass";
-    roarNoiseFilter.frequency.setValueAtTime(400, t + 0.3);
-    roarNoiseFilter.frequency.linearRampToValueAtTime(600, t + 0.6);
-    roarNoiseFilter.frequency.linearRampToValueAtTime(300, t + 1.1);
-    roarNoiseFilter.Q.value = 3;
-    const roarNoiseGain = this.ctx.createGain();
-    roarNoiseGain.gain.setValueAtTime(0, t + 0.25);
-    roarNoiseGain.gain.linearRampToValueAtTime(0.18, t + 0.45);
-    roarNoiseGain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
-    roarNoise.connect(roarNoiseFilter).connect(roarNoiseGain).connect(this.masterGain!);
-    roarNoise.start(t + 0.3);
-    roarNoise.stop(t + 1.2);
   }
 
   playMiss() {

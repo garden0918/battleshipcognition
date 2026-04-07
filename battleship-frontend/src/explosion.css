@@ -1,0 +1,69 @@
+/* Explosion animations for sinking ships */
+
+@keyframes explosion-ring {
+  0% {
+    transform: scale(0);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(5);
+    opacity: 0;
+  }
+}
+
+@keyframes explosion-flash {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes explosion-text-in {
+  0% {
+    transform: scale(0.3) rotate(-5deg);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(1.2) rotate(2deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.95) rotate(0deg);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+}
+
+.explosion-overlay {
+  animation: explosion-flash 2.2s ease-out forwards;
+  background: radial-gradient(
+    circle,
+    rgba(255, 120, 0, 0.35) 0%,
+    rgba(255, 50, 0, 0.12) 35%,
+    transparent 65%
+  );
+}
+
+.explosion-ring-effect {
+  animation: explosion-ring 1.4s ease-out forwards;
+  border: 3px solid rgba(255, 165, 0, 0.6);
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+}
+
+.explosion-text-effect {
+  animation: explosion-text-in 2.2s ease-out forwards;
+}
